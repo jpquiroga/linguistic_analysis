@@ -21,8 +21,8 @@ class TextPreprocessor(object):
         :param languages: List of languages to be processed (['spanish', 'english']).
         """
         # Encoding compatible with python 3
-        self.TWEET_NORMALIZE_REGEXP = re.compile('[\\.,;:¡!?¿\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\\\|\xa0]')
-        self.TEXT_NORMALIZE_REGEXP = re.compile('[\\.,;:!¡?¿\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\#\\|\xa0]')
+        self.TWEET_NORMALIZE_REGEXP = re.compile('[\\.,;:¡!?¿_\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\\\|\xa0]')
+        self.TEXT_NORMALIZE_REGEXP = re.compile('[\\.,;:!¡?¿_\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\#\\|\xa0]')
         self.URL_REGEXP = re.compile('(https?|ftp)://[^\\s]+')
         self.EMAIL_REGEXP = re.compile('[^\\s]+@[^\\s]+')
         self.REMOVE_ACCENTS_A_REGEXP = re.compile('[á|à|ä|â|ã]')

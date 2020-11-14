@@ -13,6 +13,7 @@ from .lemma.const import LemmatizationStrategy
 
 from nltk.tokenize import sent_tokenize
 
+SPACY_MAX_LENGTH = 10000000
 
 logger = logging.getLogger(__name__)
 
@@ -263,6 +264,7 @@ class SentenceSegmenter(object):
             _lm = spacy_language_models[l]
             if _lm is None:
                 self.spacy_language_models[l] = spacy.load(l)
+                self.spacy_language_models[l].max_length = SPACY_MAX_LENGTH
             else:
                 self.spacy_language_models[l] = spacy_language_models[l]
 

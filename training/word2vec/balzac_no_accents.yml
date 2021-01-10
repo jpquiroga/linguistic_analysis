@@ -1,0 +1,8 @@
+text_file: normalized_data/french_novel/normalized_balzac.txt
+model_name: balzac
+model_destination_dir: models/french_novels/balzac/no_accents
+sg: 0  # 0: Continuous Bag of Words (cbow); 1: SkipGram (sg)
+num_epochs: 20
+window: 10
+min_count: 5
+workers: 4

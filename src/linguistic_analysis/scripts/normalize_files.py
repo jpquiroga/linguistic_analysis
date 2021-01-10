@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from linguistic_analysis.text_iterators import SentenceSegmenter, SentenceDocTreeIterator, SentenceSegmenterNLTK
+from linguistic_analysis.text_iterators import SentenceDocTreeIterator, SentenceSegmenterNLTK
 from linguistic_analysis.text_preprocessing import TextPreprocessor
 
 

@@ -1,7 +1,7 @@
 import argparse
 import logging
 
-from linguistic_analysis.text_iterators import SentenceSegmenter, SentenceDocTreeIterator, SentenceSegmenterNLTK
+from linguistic_analysis.text_iterators import SentenceDocTreeIterator, SentenceSegmenterNLTK
 from linguistic_analysis.text_preprocessing import TextPreprocessor
 
 
@@ -11,6 +11,7 @@ def get_argparser() -> argparse.ArgumentParser:
     parser.add_argument("out_path", help="Path to the output file")
     parser.add_argument("nltk_folder", help="Path to the NLTK data folder")
     parser.add_argument("languages", help="Comma separated languages. Example: french,spanish,english")
+    parser.add_argument("remove_accents", help="Remove accents", default="Yes")
     return parser
 
 if __name__ == "__main__":
@@ -23,12 +24,13 @@ if __name__ == "__main__":
     out_path = args.out_path
     nltk_folder = args.nltk_folder
     languages = args.languages.split(",")
+    remove_accents = args.remove_accents.lower() == "yes"
 
     print("Starting normalization with parameters: {}".format(args))
 #    sentence_segmenter = SentenceSegmenter({"en": None, "fr": None, "es": None})
     sentence_segmenter = SentenceSegmenterNLTK()
 
-    text_preprocessor = TextPreprocessor(nltk_folder, languages)
+    text_preprocessor = TextPreprocessor(nltk_folder, languages, rmv_accents=remove_accents)
     sentence_doc_iterator = SentenceDocTreeIterator(in_path,
                                                     text_preprocessor,
                                                     sentence_segmenter,

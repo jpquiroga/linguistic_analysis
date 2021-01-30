@@ -15,14 +15,18 @@ class TextPreprocessor(object):
     This class makes possible to convert any text to a normalized text or to a vector of normalized words.
     """
 
-    def __init__(self, nltk_data_dir: str, languages: Iterable[Text]):
+    def __init__(self, nltk_data_dir: str, languages: Iterable[Text], rmv_accents: bool = True):
         """
         :param nltk_data_dir: Directory containing the `nltk` corpora data for stop words.
         :param languages: List of languages to be processed (['spanish', 'english']).
+        :param rmv_accents: Whether to remove accents.
         """
+        self.rmv_accents = rmv_accents
+
         # Encoding compatible with python 3
         self.TWEET_NORMALIZE_REGEXP = re.compile('[\\.,;:¡!?¿_\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\\\|\xa0]')
-        self.TEXT_NORMALIZE_REGEXP = re.compile('[\\.,;:!¡?¿_\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\#\\|\xa0]')
+#        self.TEXT_NORMALIZE_REGEXP = re.compile('[\\.,;:!¡?¿_\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\#\\|\xa0]')
+        self.TEXT_NORMALIZE_REGEXP = re.compile('[\\.,;:!¡?¿_\\s\\(\\)\\[\\]\\{\\}\\-\\\'\\"\\\\#\\|\xa0`’»«…–—]')
         self.URL_REGEXP = re.compile('(https?|ftp)://[^\\s]+')
         self.EMAIL_REGEXP = re.compile('[^\\s]+@[^\\s]+')
         self.REMOVE_ACCENTS_A_REGEXP = re.compile('[á|à|ä|â|ã]')
@@ -81,8 +85,9 @@ class TextPreprocessor(object):
         res = pattern.sub(' ', res)
         logger.debug("Text without punctuation chars: " + res)
         logger.debug("Text Normalized (with accents): " + res)
-        res = self.remove_accents(res)
-        logger.debug("Text Normalized (without accents): " + res)
+        if self.rmv_accents:
+            res = self.remove_accents(res)
+            logger.debug("Text Normalized (without accents): " + res)
 
         return res
 
@@ -182,17 +187,17 @@ class TextPreprocessor(object):
             logging.debug(logging.DEBUG, 'Start removeStopWords')
             res = self.remove_stop_words(res)
             logging.log(logging.DEBUG, 'End removeStopWords')
-        logging.log(logging.DEBUG, "Text with stop words removed: " + str(res))
+            logging.log(logging.DEBUG, "Text with stop words removed: " + str(res))
         if include_words_regexs:
             logging.log(logging.DEBUG, 'Start (include_words) removeWordsRegex')
             res = self.remove_words_regex(res, include_words_regexs, False)
             logging.log(logging.DEBUG, 'End (include_words) removeWordsRegex')
-        logging.log(logging.DEBUG, "Text with words which don't match include_words_regexs removed: " + str(res))
+            logging.log(logging.DEBUG, "Text with words which don't match include_words_regexs removed: " + str(res))
         if exclude_words_regexs:
             logging.log(logging.DEBUG, 'Start (exclude_words) removeWordsRegex')
             res = self.remove_words_regex(res, exclude_words_regexs, True)
             logging.log(logging.DEBUG, 'End (exclude_words) removeWordsRegex')
-        logging.log(logging.DEBUG, "Text with words which match exclude_words_regexs removed: " + str(res))
+            logging.log(logging.DEBUG, "Text with words which match exclude_words_regexs removed: " + str(res))
 
         if lemmatize:
             logger.error("Lemmatization is not yet supported!")

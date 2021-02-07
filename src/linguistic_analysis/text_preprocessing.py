@@ -175,29 +175,29 @@ class TextPreprocessor(object):
 
         :return: A vector of tokens (words).
         """
-        logging.log(logging.DEBUG, 'Start preprocessText')
-        logging.log(logging.DEBUG, "Original Text: " + text)
-        logging.log(logging.DEBUG, "Text converted to str: " + text)
+        logging.debug('Start preprocessText')
+        logging.debug("Original Text: " + text)
+        logging.debug("Text converted to str: " + text)
 
         res = self.split_by_regex(self.normalize(text), '\\s')
 
-        logging.log(logging.DEBUG, "Text Normalized and split by Regex (\\\\s): " + str(res))
+        logging.debug("Text Normalized and split by Regex (\\\\s): " + str(res))
         res = self.remove_empty_strings(res)
         if remove_stop_words:
-            logging.debug(logging.DEBUG, 'Start removeStopWords')
+            logging.debug('Start removeStopWords')
             res = self.remove_stop_words(res)
-            logging.log(logging.DEBUG, 'End removeStopWords')
-            logging.log(logging.DEBUG, "Text with stop words removed: " + str(res))
+            logging.debug('End removeStopWords')
+            logging.debug("Text with stop words removed: " + str(res))
         if include_words_regexs:
-            logging.log(logging.DEBUG, 'Start (include_words) removeWordsRegex')
+            logging.debug('Start (include_words) removeWordsRegex')
             res = self.remove_words_regex(res, include_words_regexs, False)
-            logging.log(logging.DEBUG, 'End (include_words) removeWordsRegex')
-            logging.log(logging.DEBUG, "Text with words which don't match include_words_regexs removed: " + str(res))
+            logging.debug('End (include_words) removeWordsRegex')
+            logging.debug("Text with words which don't match include_words_regexs removed: " + str(res))
         if exclude_words_regexs:
-            logging.log(logging.DEBUG, 'Start (exclude_words) removeWordsRegex')
+            logging.debug('Start (exclude_words) removeWordsRegex')
             res = self.remove_words_regex(res, exclude_words_regexs, True)
-            logging.log(logging.DEBUG, 'End (exclude_words) removeWordsRegex')
-            logging.log(logging.DEBUG, "Text with words which match exclude_words_regexs removed: " + str(res))
+            logging.debug('End (exclude_words) removeWordsRegex')
+            logging.debug("Text with words which match exclude_words_regexs removed: " + str(res))
 
         if lemmatize:
             logger.error("Lemmatization is not yet supported!")

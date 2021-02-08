@@ -20,8 +20,8 @@ class SemGraph():
         assert len(set(names)) == len(names)  # Ensure no repeated names
         self.names = sorted(set(names))
         self.dimension = len(names)
-        self.indexes = {name: i for i, name in enumerate(names)}
-        for i, n in enumerate(names):
+        self.indexes = {name: i for i, name in enumerate(self.names)}
+        for i, n in enumerate(self.names):
             self.graph.add_node(i, name=n, s=self.__get_initial_score(i))
 
     @classmethod
@@ -49,7 +49,7 @@ class SemGraph():
                     words.append(w)
         words = sorted(set(words))
         res = SemGraph(words)
-        # 2 Add similarity values as edge weights
+        # 2. Add similarity values as edge weights
         for i in range(len(words)):
             for j in range(i, len(words)):
                 w1 = words[i]
@@ -68,6 +68,17 @@ class SemGraph():
         index_2 = self.indexes[name_2]
         self.graph.add_edge(index_1, index_2, similarity=similarity)
 
+    def set_edge_similarity(self, name_1:Text, name_2:Text, similarity:float):
+        self.add_edge_with_names(name_1, name_2, similarity)
+
+    def get_edge_similarity(self, name_1:Text, name_2:Text) -> float:
+        index_1 = self.indexes[name_1]
+        index_2 = self.indexes[name_2]
+        if index_2 in self.graph[index_1]:
+            return self.graph[index_1][index_2]["similarity"]
+        else:
+            return 0.0
+
     def reset(self):
         for i in range(self.dimension):
             self.graph.nodes[i]["s"] = self.__get_initial_score(i)
@@ -75,9 +86,19 @@ class SemGraph():
     def get_score_vectors(self) -> List[np.ndarray]:
         return [self.graph.nodes[i]["s"] for i in range(self.dimension)]
 
-    def get_semantic_similarity(self, g: "SemGraph", num_iterations: int,
-                                discount_function: Callable= lambda index: 0.9,
-                                normalize: bool= True) -> float:
+    def get_semantic_distance(self, g: "SemGraph", num_iterations: int,
+                              discount_function: Callable= lambda index: 0.9,
+                              normalize: bool= True) -> float:
+        """
+        Distance is calculated sem graphs composed by the same nodes. If the sets of nodes are different, an exception
+        is raised.
+
+        :param g: The sem graph to compare with.
+        :param num_iterations:  The number of iterations to be used in the propagation algorithm.
+        :param discount_function: Discount function to be used.
+        :param normalize: Whether to normalize the
+        :return: The distance value.
+        """
         assert self.names == g.names
         assert self.dimension == g.dimension
         self.propagate(num_iterations, discount_function)
@@ -102,6 +123,31 @@ class SemGraph():
         for i in range(self.dimension):
             s = self.graph.nodes[i]["s"]
             self.graph.nodes[i]["s"] = s / np.linalg.norm(s)
+
+    def copy(self) -> "SemGraph":
+        res = SemGraph(self.names)
+        res.graph = copy.deepcopy(self.graph)
+        res.dimension = self.dimension
+        res.indexes = copy.deepcopy(self.indexes)
+        return res
+
+    def get_augmented_graph(self, additional_names: Iterable[Text]) -> "SemGraph":
+        """
+        Get an augmented sem graph resulting from adding a list of additional nodes.
+
+        :param additional_names: The names of the nodes to be added.
+
+        :return:
+        """
+        names = list(set(self.names).union(set(additional_names)))
+        print(names)  # Debug
+        res = SemGraph(names)
+        for i in range(len(self.names)):
+            for j in range(i, len(self.names)):
+                similarity = self.get_edge_similarity(self.names[i], self.names[j])
+                if similarity > 0:
+                    res.add_edge_with_names(self.names[i], self.names[j], similarity)
+        return res
 
     @classmethod
     def __calculate_score_vectors_distance(cls, s1: Iterable[np.ndarray], s2: Iterable[np.ndarray]) -> float:

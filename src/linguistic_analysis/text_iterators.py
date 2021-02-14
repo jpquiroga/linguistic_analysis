@@ -4,7 +4,9 @@ import logging
 import os
 import os.path
 import re
+import shutil
 import spacy
+import tempfile
 import time
 from typing import Text
 
@@ -375,7 +377,7 @@ class SentenceIterator(object):
 class SentenceDocTreeIterator(object):
     """
     This class iterates along the files located in a directory (including all its subdirectories) and processes the
-    text contained in these files. Text processing include:
+    text contained in these files. Text processing includes:
       0. Sentence segmentation
       1. Normalize
       2. Tokenize
@@ -567,21 +569,61 @@ class SentenceDocTreeIterator(object):
         return res
 
 
-#if __name__ == "__main__":
-#    #    spacy_language_models = {
-#    ##        "en": spacy.load("en"),
-#    #        "es": spacy.load("es")
-#    #    }
-#    #    sentence_segmenter = SentenceSegmenter(spacy_language_models)
-#
-#    sentence_segmenter = SentenceSegmenterNLTK()
-#    path = "/tmp/test"
-#    is_tweet = False
-#    text_preprocessor = TextPreprocessor("/home/jdelpeso/nltk_data", ["english", "spanish"])
-#    sdi = SentenceDocTreeIterator(path, is_tweet, text_preprocessor, sentence_segmenter,
-#                                  remove_stop_words=True, inc=None, exc=None, include_words_regexs=None,
-#                                  exclude_words_regexs=None, lemmatize=False,
-#                                  lemmatization_strategy=LEMMATIZATION_STRATEGY.ALL,
-#                                  encoding="latin1")
-#    for s in sdi:
-#        print(s)
+class SentenceDocIterator(object):
+    """
+    This class iterates along the text contained in one files. Text processing includes:
+      0. Sentence segmentation
+      1. Normalize
+      2. Tokenize
+      3. Remove stop words
+    As a result, a vector containing normalizaed words is returned on every iteration.
+    """
+
+    def __init__(self,
+                 path: Text,
+                 text_preprocessor: TextPreprocessor,
+                 sentence_segmenter: SentenceSegmenter,
+                 remove_stop_words: bool = True,
+                 inc: Iterable[Text] = None,
+                 exc: Iterable[Text] = None,
+                 include_words_regexs: Iterable[Text] = None,
+                 exclude_words_regexs: Iterable[Text] = None,
+                 lemmatize: bool = False,
+                 lemmatization_strategy: Text = LemmatizationStrategy.ALL,
+                 encoding: Text = None):
+        """
+        :param path: Path of the file to process.
+        :param text_preprocessor: Instance of altran.text_preprocessing.TextPreprocessor.TextPreprocessor class
+        :param sentence_segmenter:
+        :param remove_stop_words: Whether to remove stop words
+        :param inc: List of regular expressions matching the files to be included into
+            the processing. If left None, all files will be included.
+        :param exc: List of regular expressions matching the files to be excluded into
+            the processing among those considered as included in the inc parameter. If left
+            None, no file will be excluded.
+        :param include_words_regexs: List of regular expressions (strings) that must be matched
+            by any document word.
+        :param exclude_words_regexs: List of regular expressions (strings) that must not be
+            matched by any document word.
+        :param lemmatize: Whether lemmatize the text. Default, False.
+        :param lemmatization_strategy: Strategy to use in lemmatization (see altran.nlp.lemma.const.py)
+        :param encoding:
+        """
+        # Create temp dir
+        self.temp_dir = tempfile.mkdtemp()
+        shutil.copyfile(path, os.path.join(self.temp_dir, os.path.split(path)[-1]))
+        self.iterator = SentenceDocTreeIterator(self.temp_dir,
+                                                text_preprocessor,
+                                                sentence_segmenter,
+                                                remove_stop_words=remove_stop_words,
+                                                inc=inc,
+                                                exc=exc,
+                                                include_words_regexs=include_words_regexs,
+                                                exclude_words_regexs=exclude_words_regexs,
+                                                lemmatize=lemmatize,
+                                                lemmatization_strategy=lemmatization_strategy,
+                                                encoding=encoding)
+
+    def __iter__(self):
+        for s in self.iterator:
+            yield s

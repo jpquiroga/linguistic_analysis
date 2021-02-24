@@ -1,6 +1,6 @@
-text_file: normalized_data/french_novel/normalized_balzac_with_accents_lemmatized.txt
+text_file: normalized_data/french_novel/balzac/joint/normalized_balzac_with_accents_lemmatized.txt
 model_name: balzac
-model_destination_dir: models/french_novels/balzac/accents_lemmatized
+model_destination_dir: models/french_novels/balzac/joint/accents_lemmatized
 sg: 0  # 0: Continuous Bag of Words (cbow); 1: SkipGram (sg)
 num_epochs: 20
 window: 10

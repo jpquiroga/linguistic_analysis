@@ -43,10 +43,11 @@ class SemGraph():
         # 1. Identify words to add to the Semgraph
         words = [w for w in base_words]
         for w in base_words:
-            candidate_words = embedding_model.similar_by_word(w, topn=n_top_similar)
-            for w,sim in candidate_words:
-                if sim > similarity_threshold and w not in words:
-                    words.append(w)
+            if w in embedding_model:
+                candidate_words = embedding_model.similar_by_word(w, topn=n_top_similar)
+                for w, sim in candidate_words:
+                    if sim > similarity_threshold and w not in words:
+                        words.append(w)
         words = sorted(set(words))
         res = SemGraph(words)
         # 2. Add similarity values as edge weights
@@ -54,7 +55,7 @@ class SemGraph():
             for j in range(i, len(words)):
                 w1 = words[i]
                 w2 = words[j]
-                if w1 != w2:
+                if w1 != w2 and w1 in embedding_model and w2 in embedding_model:
                     similarity = embedding_model.similarity(w1, w2)
                     if similarity > similarity_threshold:
                         res.add_edge_with_names(w1, w2, similarity)
@@ -90,20 +91,59 @@ class SemGraph():
                               discount_function: Callable= lambda index: 0.9,
                               normalize: bool= True) -> float:
         """
-        Distance is calculated sem graphs composed by the same nodes. If the sets of nodes are different, an exception
-        is raised.
+        Distance is calculated on semgraphs composed by the same nodes. If the sets of nodes are different, an
+        exception is raised.
 
         :param g: The sem graph to compare with.
-        :param num_iterations:  The number of iterations to be used in the propagation algorithm.
+        :param num_iterations:  The number of iterations to be used in the propagation algorithm. If 0, no propagation
+            will be carried out.
         :param discount_function: Discount function to be used.
         :param normalize: Whether to normalize the
         :return: The distance value.
         """
         assert self.names == g.names
         assert self.dimension == g.dimension
-        self.propagate(num_iterations, discount_function)
-        g.propagate(num_iterations, discount_function, normalize=normalize)
+        if num_iterations > 0:
+            self.propagate(num_iterations, discount_function=discount_function, normalize=normalize)
+            g.propagate(num_iterations, discount_function=discount_function, normalize=normalize)
         return SemGraph.__calculate_score_vectors_distance(self.get_score_vectors(), g.get_score_vectors())
+
+    @classmethod
+    def get_relative_semantic_distances(cls, reference_semgraph: "SemGraph",
+                                        semgraphs: Iterable["SemGraph"],
+                                        num_iterations: int,
+                                        discount_function: Callable= lambda index: 0.9,
+                                        normalize: bool= True) -> List[float]:
+        """
+        Get a list of semantic distances from a reference semgraph to a list of other semgraphs.
+        All the semgraphs are supposed to have the same names for its nodes and the same dimensions.
+        :param reference_semgraph: The reference semgraph from which distances will be calculated.
+        :param semgraphs: Iterable with semgraphs.
+        :param num_iterations:  The number of iterations to be used in the propagation algorithm. If 0, no propagation
+            will be carried out.
+        :param discount_function: Discount function to be used.
+        :param normalize: Whether to normalize the
+        :return: A list with the semantic distances in the same order as in semgraphs.
+        """
+        for sg in semgraphs:
+            assert reference_semgraph.names == sg.names
+            assert reference_semgraph.dimension == sg.dimension
+        res = []
+        if num_iterations > 0:
+            reference_semgraph.propagate(num_iterations, discount_function=discount_function, normalize=normalize)
+        for sg in semgraphs:
+            if num_iterations > 0:
+                sg.propagate(num_iterations, discount_function=discount_function, normalize=normalize)
+            res.append(SemGraph.__calculate_score_vectors_distance(reference_semgraph.get_score_vectors(),
+                                                                   sg.get_score_vectors()))
+        return res
+
+    @classmethod
+    def get_union_of_graph_names(cls, semgraphs: Iterable["SemGraph"]) -> List[str]:
+        res = set()
+        for sg in semgraphs:
+            res = res.union(set(sg.names))
+        return sorted(res)
 
     def propagate(self, num_iterations: int, discount_function: Callable= lambda index: 0.9,
                   normalize: bool= True):
@@ -140,21 +180,27 @@ class SemGraph():
         :return:
         """
         names = list(set(self.names).union(set(additional_names)))
-        print(names)  # Debug
         res = SemGraph(names)
         for i in range(len(self.names)):
             for j in range(i, len(self.names)):
-                similarity = self.get_edge_similarity(self.names[i], self.names[j])
-                if similarity > 0:
-                    res.add_edge_with_names(self.names[i], self.names[j], similarity)
+                if self.names[i] != self.names[j]:
+                    similarity = self.get_edge_similarity(self.names[i], self.names[j])
+                    if similarity > 0:
+                        res.add_edge_with_names(self.names[i], self.names[j], similarity)
         return res
 
     @classmethod
     def __calculate_score_vectors_distance(cls, s1: Iterable[np.ndarray], s2: Iterable[np.ndarray]) -> float:
+        """
+        Calculate the mean distance between two list of arrays. Euclidean distance is used.
+        :param s1:
+        :param s2:
+        :return: The mean distance.
+        """
         res = 0
         assert len(list(s1)) == len(list(s2))
         for i, s in enumerate(s1):
-            res += np.linalg.norm(s1, s2[i])
+            res += np.linalg.norm(s - s2[i])
         return res
 
     def save_to_gefx(self, path:Text):
@@ -167,3 +213,15 @@ class SemGraph():
         for n in g_exp.nodes:
             g_exp.nodes[n]["s"] = str(g_exp.nodes[n]["s"])
         nx.write_gexf(g_exp, path)
+
+    def clone(self) -> "SemGraph":
+        res = SemGraph(self.names)
+        for i in range(len(self.names)):
+            for j in range(i, len(self.names)):
+                w1 = self.names[i]
+                w2 = self.names[j]
+                if w1 != w2:
+                    similarity = self.get_edge_similarity(w1, w2)
+                    if similarity > 0:
+                        res.add_edge_with_names(w1, w2, similarity)
+        return res

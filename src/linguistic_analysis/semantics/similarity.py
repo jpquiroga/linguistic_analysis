@@ -2,6 +2,7 @@ import copy
 import math
 import networkx as nx
 import numpy as np
+from tqdm import tqdm
 from typing import Callable, Iterable, List, Text
 
 def get_discount_function_constant(value: float) -> Callable:
@@ -111,14 +112,16 @@ class SemGraph():
     @classmethod
     def get_relative_semantic_distances(cls, reference_semgraph: "SemGraph",
                                         semgraphs: Iterable["SemGraph"],
+                                        reset: bool,
                                         num_iterations: int,
                                         discount_function: Callable= lambda index: 0.9,
                                         normalize: bool= True) -> List[float]:
         """
         Get a list of semantic distances from a reference semgraph to a list of other semgraphs.
-        All the semgraphs are supposed to have the same names for its nodes and the same dimensions.
+        All the semgraphs are supposed to have the same names for their nodes and the same dimensions.
         :param reference_semgraph: The reference semgraph from which distances will be calculated.
         :param semgraphs: Iterable with semgraphs.
+        :param reset: Whether to reset the semgraphs to compare.
         :param num_iterations:  The number of iterations to be used in the propagation algorithm. If 0, no propagation
             will be carried out.
         :param discount_function: Discount function to be used.
@@ -129,13 +132,48 @@ class SemGraph():
             assert reference_semgraph.names == sg.names
             assert reference_semgraph.dimension == sg.dimension
         res = []
+        if reset:
+            reference_semgraph.reset()
         if num_iterations > 0:
             reference_semgraph.propagate(num_iterations, discount_function=discount_function, normalize=normalize)
-        for sg in semgraphs:
+        for sg in tqdm(semgraphs):
+            if reset:
+                sg.reset()
             if num_iterations > 0:
                 sg.propagate(num_iterations, discount_function=discount_function, normalize=normalize)
             res.append(SemGraph.__calculate_score_vectors_distance(reference_semgraph.get_score_vectors(),
                                                                    sg.get_score_vectors()))
+        return res
+
+    @classmethod
+    def get_relative_semantic_distance_matrix(cls, semgraphs: Iterable["SemGraph"],
+                                              reset: bool,
+                                              num_iterations: int,
+                                              discount_function: Callable= lambda index: 0.9,
+                                              normalize: bool= True) -> np.ndarray:
+        """
+        Get a matrix with the semantic distances of a list of semgraphs.
+        All the semgraphs are supposed to have the same names for their nodes and the same dimensions.
+        :param semgraphs: Iterable with semgraphs.
+        :param reset: Whether to reset the semgraphs to compare.
+        :param num_iterations:  The number of iterations to be used in the propagation algorithm. If 0, no propagation
+            will be carried out.
+        :param discount_function: Discount function to be used.
+        :param normalize: Whether to normalize the
+        :return: A matrix with the relative semantic distance between pairs of semgraphs. This is a squared symmetric
+            matrix with the same indexes as the `semgraphs` parameter.
+        """
+        res = np.zeros((len(semgraphs), len(semgraphs)))
+        for sg in tqdm(semgraphs):
+            if reset:
+                sg.reset()
+            if num_iterations > 0:
+                sg.propagate(num_iterations, discount_function=discount_function, normalize=normalize)
+        for i, sg_i in tqdm(enumerate(semgraphs)):
+            for j, sg_j in enumerate(semgraphs):
+                assert sg_i.names == sg_j.names
+                res[i, j] = SemGraph.__calculate_score_vectors_distance(sg_i.get_score_vectors(),
+                                                                        sg_j.get_score_vectors())
         return res
 
     @classmethod

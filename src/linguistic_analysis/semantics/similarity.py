@@ -2,6 +2,7 @@ import copy
 import math
 import networkx as nx
 import numpy as np
+import os
 from tqdm import tqdm
 from typing import Callable, Iterable, List, Text
 
@@ -263,3 +264,22 @@ class SemGraph():
                     if similarity > 0:
                         res.add_edge_with_names(w1, w2, similarity)
         return res
+
+    def get_stacked_vectors(self) -> np.ndarray:
+        return np.array(self.get_score_vectors()).reshape(1, -1)[0]
+
+    @classmethod
+    def save_stacked_semgraphs_to_tsv(cls, semgraphs: Iterable["SemGraph"], labels: Iterable[str], path: str):
+        """
+        Save the stacked representation of a list of semgraphs to a TSV format with metadata.
+        :param semgraphs: The semgraphs to save.
+        :param labels: The list of labels to use as metadata, in the same order as semgraphs.
+        :param path: The file to write the data in TSV format. The metadata will be written to a file with the same path
+            and name, with the additional suffix ".metadata".
+        """
+        with open(path, "w") as f:
+            for sg in tqdm(semgraphs):
+                f.write("\t".join([str(d) for d in sg.get_stacked_vectors()]) + "\n")
+        with open(path + ".metadata", "w") as f:
+            for l in tqdm(labels):
+                f.write(l + "\n")

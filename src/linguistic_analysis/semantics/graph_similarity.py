@@ -1,21 +1,34 @@
 import numpy as np
-from typing import Union, Text
+from typing import Iterable, Union, Text
 
 
 class Triangle(object):
+    """
+    Triangle.
+    """
 
-    def __init__(self, p_a: np.ndarray, p_b: np.ndarray, p_c: np.ndarray):
-        assert p_a.shape == p_b.shape == p_c.shape
-        self.p_a = p_a
-        self.p_b = p_b
-        self.p_c = p_c
+    def __init__(self, ab: float, bc: float, ac: float, a_name: Text, b_name: Text, c_name: Text):
+        """
+        Create a triangle from the length of its edges.
+
+        :param ab: Length of segment AB.
+        :param bc: Length of segment BC.
+        :param ac: Length of segment AC.
+        :param a_name: The name of the vertex A.
+        :param b_name: The name of the vertex B.
+        :param c_name: The name of the vertex C.
+        """
+        assert ab > 0 and bc > 0 and ac > 0
+        self.a_name = a_name
+        self.b_name = b_name
+        self.c_name = c_name
         # Calculate angles
-        ab = np.linalg.norm(p_a - p_b)
-        bc = np.linalg.norm(p_b - p_c)
-        ac = np.linalg.norm(p_c - p_a)
-        self.cos_a = (ac**2 + ab**2 - bc**2)/(2*ac*ab)
-        self.cos_b = (bc**2 + ab**2 - ac**2)/(2*ab*bc)
-        self.cos_c = (bc**2 + ac**2 - ab**2)/(2*ac*bc)
+        self.ab = ab
+        self.bc = bc
+        self.ac = ac
+        self.cos_a = (ac ** 2 + ab ** 2 - bc ** 2) / (2 * ac * ab)
+        self.cos_b = (bc ** 2 + ab ** 2 - ac ** 2) / (2 * ab * bc)
+        self.cos_c = (bc ** 2 + ac ** 2 - ab ** 2) / (2 * ac * bc)
 
     def _get_angle_vector(self) -> np.ndarray:
         return np.array([self.cos_a, self.cos_b, self.cos_c])
@@ -65,14 +78,39 @@ class Triangle(object):
         return np.linalg.norm(self._get_angle_vector() - t._get_angle_vector(), ord=ord)
 
     def __str__(self):
-        return f"Triangle[p_a: {self.p_a}, p_b: {self.p_b}, p_c: {self.p_c}; " \
-               f"cos_a: {self.cos_a}, cos_b: {self.cos_b}, cos_c:{self.cos_c}]"
+        return f"Triangle[{self.a_name}-{self.b_name}: {self.ab}, " \
+               f"{self.b_name}-{self.c_name}: {self.bc} ," \
+               f"{self.a_name}-{self.c_name}: {self.ac}; " \
+               f"cos_{self.a_name}: {self.cos_a}, " \
+               f"cos_{self.b_name}: {self.cos_b}, " \
+               f"cos_{self.c_name}:{self.cos_c}]"
 
 
+class Triangulation(object):
+
+    def __init__(self, triangles: Iterable[Triangle]):
+        """
+        :param triangles:
+        """
+        self.triangles: Iterable[Triangle] = triangles
+
+    def get_angle_distance(self, t: "Triangulation") -> float:
+        assert(len(self.triangles) == len(t.triangles))
+        res = 0
+        for t_1, t_2 in zip(self.triangles, t.triangles):
+            res += t_1.get_angle_distance(t_2)
+        return res
+
+
+# TODO Move to unit tests
 if __name__ == "__main__":
     import math
-    t1 = Triangle(np.array([0, 0]), np.array([1, 0]), np.array([0.5, math.sqrt(3) / 2]))
+    t1 = Triangle(1, 1, 1, "A", "B", "C")
     print(t1)
-    t2 = Triangle(np.array([0, 0]), np.array([1, 0]), np.array([1, 1]))
+    t2 = Triangle(1, 1, math.sqrt(2), "A", "B", "C")
     print(t2)
+    t3 = Triangle(1, 100000, 100000, "A", "B", "C")
+    print(t3)
     print(t1.get_angle_distance(t2))
+    print(t1.get_angle_distance(t3))
+    print(t2.get_angle_distance(t3))

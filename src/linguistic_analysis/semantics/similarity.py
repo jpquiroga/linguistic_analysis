@@ -2,9 +2,10 @@ import copy
 import math
 import networkx as nx
 import numpy as np
-import os
 from tqdm import tqdm
 from typing import Callable, Iterable, List, Text
+
+from linguistic_analysis.semantics.graph_similarity import Triangle, Triangulation
 
 def get_discount_function_constant(value: float) -> Callable:
     return lambda index: value
@@ -283,3 +284,15 @@ class SemGraph():
         with open(path + ".metadata", "w") as f:
             for l in tqdm(labels):
                 f.write(l + "\n")
+
+    def get_triangulation(self) -> Triangulation:
+        """
+        Get a triangulation from the current semgraph.
+        The triangles follow a lexicographic order, where the name of each triangle is the lexicographically ordered
+        triplet of its vertex names. Example: ABC, ACD, BCD, BDE
+
+        :return: The generated triangulation.
+        """
+        # 1. Get all the combinations of vertex triplets.
+        # 2. Lexicographically order triplets of vertexes.
+        # 3. TODO ¿Qué hacer si una terna no tiene ninguna arista dentro del grafo?

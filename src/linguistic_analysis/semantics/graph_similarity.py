@@ -1,5 +1,7 @@
 import numpy as np
-from typing import Iterable, Union, Text
+from typing import Dict, List, Iterable, Text, Union
+
+from linguistic_analysis.semantics.constants import NAME_SEPARATOR
 
 
 class Triangle(object):
@@ -29,6 +31,25 @@ class Triangle(object):
         self.cos_a = (ac ** 2 + ab ** 2 - bc ** 2) / (2 * ac * ab)
         self.cos_b = (bc ** 2 + ab ** 2 - ac ** 2) / (2 * ab * bc)
         self.cos_c = (bc ** 2 + ac ** 2 - ab ** 2) / (2 * ac * bc)
+        self._sorted_vnames = sorted([self.a_name, self.b_name, self.c_name])
+        self._triangle_name = NAME_SEPARATOR.join(self._sorted_vnames)
+        # Dictionary of values
+        self.d_angles: Dict[Text, float] = {self.a_name: self.cos_a, self.b_name: self.cos_b, self.c_name: self.cos_c}
+        self.d_distances: Dict[Text, float] = {NAME_SEPARATOR.join(sorted([self.a_name, self.b_name])): self.ab,
+                            NAME_SEPARATOR.join(sorted([self.b_name, self.c_name])): self.bc,
+                            NAME_SEPARATOR.join(sorted([self.a_name, self.c_name])): self.ac}
+    @property
+    def name(self) -> Text:
+        return self._triangle_name
+
+    @property
+    def sorted_vnames(self) -> List[str]:
+        return self._sorted_vnames
+
+    def get_distance(self, v1: Text, v2: Text) -> float:
+        assert v1 in self.d_distances
+        assert v2 in self.d_distances
+        return self.d_distances[NAME_SEPARATOR.join(sorted([v1, v2]))]
 
     def _get_angle_vector(self) -> np.ndarray:
         return np.array([self.cos_a, self.cos_b, self.cos_c])

@@ -1,11 +1,14 @@
 import copy
+from itertools import combinations
 import math
 import networkx as nx
 import numpy as np
 from tqdm import tqdm
-from typing import Callable, Iterable, List, Text
+from typing import Callable, Iterable, List, Text, Tuple
 
 from linguistic_analysis.semantics.graph_similarity import Triangle, Triangulation
+from linguistic_analysis.semantics.constants import NAME_SEPARATOR
+
 
 def get_discount_function_constant(value: float) -> Callable:
     return lambda index: value
@@ -16,6 +19,10 @@ def get_discount_function_exponential(rate: float) -> Callable:
 class SemGraph():
     """
     Semantic graph. This class includes the calculation of semantic similarity between graphs.
+
+    Every node in the graph is a word.
+    Edges (those existing) have similarity values in [0, 1]. Distances are calculated as `d = 1 -s` an are also in
+    [0 ,1].
     """
 
     def __init__(self, names: Iterable[Text]):
@@ -72,16 +79,33 @@ class SemGraph():
         index_2 = self.indexes[name_2]
         self.graph.add_edge(index_1, index_2, similarity=similarity)
 
-    def set_edge_similarity(self, name_1:Text, name_2:Text, similarity:float):
+    def set_edge_similarity(self, name_1: Text, name_2: Text, similarity:float):
         self.add_edge_with_names(name_1, name_2, similarity)
 
-    def get_edge_similarity(self, name_1:Text, name_2:Text) -> float:
+    def get_edge_similarity(self, name_1: Text, name_2: Text) -> float:
+        """
+        Similarity value is in [0, 1]
+
+        :param name_1:
+        :param name_2:
+        :return: The similarity value.
+        """
         index_1 = self.indexes[name_1]
         index_2 = self.indexes[name_2]
         if index_2 in self.graph[index_1]:
             return self.graph[index_1][index_2]["similarity"]
         else:
             return 0.0
+
+    def get_edge_distance(self, name_1: Text, name_2: Text) -> float:
+        """
+        Distance value is in [0, 1]
+
+        :param name_1:
+        :param name_2:
+        :return: The distance value.
+        """
+        return 1 - self.get_edge_similarity(name_1, name_2)
 
     def reset(self):
         for i in range(self.dimension):
@@ -294,5 +318,42 @@ class SemGraph():
         :return: The generated triangulation.
         """
         # 1. Get all the combinations of vertex triplets.
-        # 2. Lexicographically order triplets of vertexes.
-        # 3. TODO ¿Qué hacer si una terna no tiene ninguna arista dentro del grafo?
+        # Only include valid triplets.
+        vertex_triplets = self.__get_all_valid_vertex_triplets(self)
+        # 2. Create triangles.
+        triangles = [self.__build_triangle(triplet) for triplet in vertex_triplets]
+        # 3. Lexicographically order triangles by name.
+        ordered_triangles = sorted(triangles, key=lambda t: t.name)
+        return Triangulation(ordered_triangles)
+
+    def __build_triangle(self, triplet: Iterable[Text]) -> Triangle:
+        a_name, b_name, c_name = triplet
+        ab = self.get_edge_distance(a_name, b_name)
+        bc = self.get_edge_distance(b_name, c_name)
+        ac = self.get_edge_distance(a_name, c_name)
+        res = Triangle(ab, bc, ac, a_name, b_name, c_name)
+        return res
+
+    def __get_all_valid_vertex_triplets(self) -> Iterable[Tuple[Text, Text, Text]]:
+        all_vertex_triplets = self.list(combinations(self.names, 3))
+        res = [t for t in all_vertex_triplets if self.__is_valid_vertex_triplet(t)]
+        return res
+
+    def __is_valid_vertex_triplet(self, triplet: Iterable[Text]) -> bool:
+        num_vertexes_in_graph = 0
+        a = triplet[0]
+        b = triplet[1]
+        c = triplet[2]
+        if self.__is_vertex_in_graph(a, b):
+            num_vertexes_in_graph += 1
+        if self.__is_vertex_in_graph(b, c):
+            num_vertexes_in_graph += 1
+        if self.__is_vertex_in_graph(a, c):
+            num_vertexes_in_graph += 1
+        return num_vertexes_in_graph > 0
+
+    def __is_vertex_in_graph(self, node_name_1: Text, node_name_2: Text) -> bool:
+        index_1 = self.indexes.get(node_name_1, -1)
+        index_2 = self.indexes.get(node_name_2, -1)
+        return index_1 >= 0 and index_2 >= 0 and \
+               (index_2 in self.graph.get(index_1, {}) or index_1 in self.graph.get(index_2, {}))

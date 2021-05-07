@@ -319,7 +319,7 @@ class SemGraph():
         """
         # 1. Get all the combinations of vertex triplets.
         # Only include valid triplets.
-        vertex_triplets = self.__get_all_valid_vertex_triplets(self)
+        vertex_triplets = self.__get_all_valid_vertex_triplets()
         # 2. Create triangles.
         triangles = [self.__build_triangle(triplet) for triplet in vertex_triplets]
         # 3. Lexicographically order triangles by name.
@@ -335,7 +335,7 @@ class SemGraph():
         return res
 
     def __get_all_valid_vertex_triplets(self) -> Iterable[Tuple[Text, Text, Text]]:
-        all_vertex_triplets = self.list(combinations(self.names, 3))
+        all_vertex_triplets = combinations(self.names, 3)
         res = [t for t in all_vertex_triplets if self.__is_valid_vertex_triplet(t)]
         return res
 
@@ -356,4 +356,5 @@ class SemGraph():
         index_1 = self.indexes.get(node_name_1, -1)
         index_2 = self.indexes.get(node_name_2, -1)
         return index_1 >= 0 and index_2 >= 0 and \
-               (index_2 in self.graph.get(index_1, {}) or index_1 in self.graph.get(index_2, {}))
+               ((index_1 in self.graph and index_2 in self.graph[index_1]) or
+                (index_2 in self.graph and index_1 in self.graph[index_2]))

@@ -36,8 +36,8 @@ class Triangle(object):
         # Dictionary of values
         self.d_angles: Dict[Text, float] = {self.a_name: self.cos_a, self.b_name: self.cos_b, self.c_name: self.cos_c}
         self.d_distances: Dict[Text, float] = {NAME_SEPARATOR.join(sorted([self.a_name, self.b_name])): self.ab,
-                            NAME_SEPARATOR.join(sorted([self.b_name, self.c_name])): self.bc,
-                            NAME_SEPARATOR.join(sorted([self.a_name, self.c_name])): self.ac}
+                                               NAME_SEPARATOR.join(sorted([self.b_name, self.c_name])): self.bc,
+                                               NAME_SEPARATOR.join(sorted([self.a_name, self.c_name])): self.ac}
     @property
     def name(self) -> Text:
         return self._triangle_name
@@ -46,9 +46,8 @@ class Triangle(object):
     def sorted_vnames(self) -> List[str]:
         return self._sorted_vnames
 
-    def get_distance(self, v1: Text, v2: Text) -> float:
-        assert v1 in self.d_distances
-        assert v2 in self.d_distances
+    def get_vertex_distance(self, v1: Text, v2: Text) -> float:
+        assert NAME_SEPARATOR.join(sorted([v1, v2])) in self.d_distances
         return self.d_distances[NAME_SEPARATOR.join(sorted([v1, v2]))]
 
     def _get_angle_vector(self) -> np.ndarray:
@@ -99,7 +98,7 @@ class Triangle(object):
         return np.linalg.norm(self._get_angle_vector() - t._get_angle_vector(), ord=ord)
 
     def __str__(self):
-        return f"Triangle[{self.a_name}-{self.b_name}: {self.ab}, " \
+        return f"Triangle[name: {self.name}, {self.a_name}-{self.b_name}: {self.ab}, " \
                f"{self.b_name}-{self.c_name}: {self.bc} ," \
                f"{self.a_name}-{self.c_name}: {self.ac}; " \
                f"cos_{self.a_name}: {self.cos_a}, " \
@@ -113,25 +112,14 @@ class Triangulation(object):
         """
         :param triangles:
         """
-        self.triangles: Iterable[Triangle] = triangles
+        self.triangles: List[Triangle] = list(triangles)
 
     def get_angle_distance(self, t: "Triangulation") -> float:
         assert(len(self.triangles) == len(t.triangles))
         res = 0
         for t_1, t_2 in zip(self.triangles, t.triangles):
             res += t_1.get_angle_distance(t_2)
-        return res
+        return res / len(self.triangles)
 
-
-# TODO Move to unit tests
-if __name__ == "__main__":
-    import math
-    t1 = Triangle(1, 1, 1, "A", "B", "C")
-    print(t1)
-    t2 = Triangle(1, 1, math.sqrt(2), "A", "B", "C")
-    print(t2)
-    t3 = Triangle(1, 100000, 100000, "A", "B", "C")
-    print(t3)
-    print(t1.get_angle_distance(t2))
-    print(t1.get_angle_distance(t3))
-    print(t2.get_angle_distance(t3))
+    def __str__(self):
+        return "Triangulation[{}]".format([str(t) for t in self.triangles])

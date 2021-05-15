@@ -24,13 +24,14 @@ class Triangle(object):
         self.a_name = a_name
         self.b_name = b_name
         self.c_name = c_name
+        self.__normalize_sides(ab, bc, ac)
+#        self.ab = ab
+#        self.bc = bc
+#        self.ac = ac
         # Calculate angles
-        self.ab = ab
-        self.bc = bc
-        self.ac = ac
-        self.cos_a = (ac ** 2 + ab ** 2 - bc ** 2) / (2 * ac * ab)
-        self.cos_b = (bc ** 2 + ab ** 2 - ac ** 2) / (2 * ab * bc)
-        self.cos_c = (bc ** 2 + ac ** 2 - ab ** 2) / (2 * ac * bc)
+        self.cos_a = (self.ac ** 2 + self.ab ** 2 - self.bc ** 2) / (2 * self.ac * self.ab)
+        self.cos_b = (self.bc ** 2 + self.ab ** 2 - self.ac ** 2) / (2 * self.ab * self.bc)
+        self.cos_c = (self.bc ** 2 + self.ac ** 2 - self.ab ** 2) / (2 * self.ac * self.bc)
         self._sorted_vnames = sorted([self.a_name, self.b_name, self.c_name])
         self._triangle_name = NAME_SEPARATOR.join(self._sorted_vnames)
         # Dictionary of values
@@ -45,6 +46,11 @@ class Triangle(object):
     @property
     def sorted_vnames(self) -> List[str]:
         return self._sorted_vnames
+
+    def __normalize_sides(self, ab: float, bc: float, ac: float):
+        self.ab = min(ab, bc + ac)
+        self.bc = min(bc, ab + ac)
+        self.ac = min(ac, ab + bc)
 
     def get_vertex_distance(self, v1: Text, v2: Text) -> float:
         assert NAME_SEPARATOR.join(sorted([v1, v2])) in self.d_distances

@@ -1,5 +1,6 @@
+from functools import reduce
 import numpy as np
-from typing import Dict, List, Iterable, Text, Union
+from typing import Dict, List, Iterable, Text, Tuple, Union
 
 from linguistic_analysis.semantics.constants import NAME_SEPARATOR
 
@@ -120,12 +121,24 @@ class Triangulation(object):
         """
         self.triangles: List[Triangle] = list(triangles)
 
-    def get_angle_distance(self, t: "Triangulation") -> float:
-        assert(len(self.triangles) == len(t.triangles))
-        res = 0
-        for t_1, t_2 in zip(self.triangles, t.triangles):
-            res += t_1.get_angle_distance(t_2)
-        return res / len(self.triangles)
+    def get_angle_distance(self, t: "Triangulation") -> Tuple[float, float]:
+        """
+
+        :param t:
+        :return: (<no_normalized_distance>, <normalized_distance>)
+        """
+        distances = {}
+        d_triangles_self = {tr.name: tr for tr in self.triangles}
+        d_triangles_t = {tr.name: tr for tr in t.triangles}
+        for tr_name, tr in d_triangles_self.items():
+            distances[tr_name] = tr.get_angle_distance(d_triangles_t.get(tr_name,
+                                                                         Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)))
+        for tr_name, tr in d_triangles_t.items():
+            if tr_name not in distances:
+                distances[tr_name] = tr.get_angle_distance(d_triangles_self.get(tr_name,
+                                                                                Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)))
+        res = reduce(lambda a, b: a+b, distances.values())
+        return res, res / len(distances)
 
     def __str__(self):
         return "Triangulation[{}]".format([str(t) for t in self.triangles])

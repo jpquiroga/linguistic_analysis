@@ -358,3 +358,19 @@ class SemGraph():
         return index_1 >= 0 and index_2 >= 0 and \
                ((index_1 in self.graph and index_2 in self.graph[index_1]) or
                 (index_2 in self.graph and index_1 in self.graph[index_2]))
+
+def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph") -> Tuple[float, float]:
+    """
+    Calculate the angle distance between two SemGraphs.
+    :param g1:
+    :param g2:
+    :return: (<no_normalized_distance>, <mormalized_distance>)
+    """
+    # 1. G1 -> G1*, G2 -> G2* (G1*: extended graph with those nodes in G2 that are not contained in G1)
+    g1_e = g1.get_augmented_graph(g2.names)
+    g2_e = g2.get_augmented_graph(g1.names)
+
+    # 2. Compare triangulations
+    t1 = g1_e.get_triangulation()
+    t2 = g2_e.get_triangulation()
+    return t1.get_angle_distance(t2)

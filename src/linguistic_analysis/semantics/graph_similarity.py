@@ -121,10 +121,46 @@ class Triangulation(object):
         """
         self.triangles: List[Triangle] = list(triangles)
 
-    def get_angle_distance(self, t: "Triangulation") -> Tuple[float, float]:
+    def get_angle_distance(self, t: "Triangulation", ord: Union[int, Text]=None) -> Tuple[float, float]:
         """
 
         :param t:
+        :param ord {non-zero int, inf, -inf, 'fro', 'nuc'}, optional
+        Order of the norm (see table under ``Notes``). inf means numpy's
+        `inf` object. The default is None.
+
+            The following norms can be calculated:
+
+            =====  ============================  ==========================
+            ord    norm for matrices             norm for vectors
+            =====  ============================  ==========================
+            None   Frobenius norm                2-norm
+            'fro'  Frobenius norm                --
+            'nuc'  nuclear norm                  --
+            inf    max(sum(abs(x), axis=1))      max(abs(x))
+            -inf   min(sum(abs(x), axis=1))      min(abs(x))
+            0      --                            sum(x != 0)
+            1      max(sum(abs(x), axis=0))      as below
+            -1     min(sum(abs(x), axis=0))      as below
+            2      2-norm (largest sing. value)  as below
+            -2     smallest singular value       as below
+            other  --                            sum(abs(x)**ord)**(1./ord)
+            =====  ============================  ==========================
+
+            The Frobenius norm is given by [1]_:
+
+                :math:`||A||_F = [\\sum_{i,j} abs(a_{i,j})^2]^{1/2}`
+
+            The nuclear norm is the sum of the singular values.
+
+            Both the Frobenius and nuclear norm orders are only defined for
+            matrices and raise a ValueError when ``x.ndim != 2``.
+
+            References
+            ----------
+            .. [1] G. H. Golub and C. F. Van Loan, *Matrix Computations*,
+                   Baltimore, MD, Johns Hopkins University Press, 1985, pg. 15
+
         :return: (<no_normalized_distance>, <normalized_distance>)
         """
         distances = {}
@@ -132,11 +168,15 @@ class Triangulation(object):
         d_triangles_t = {tr.name: tr for tr in t.triangles}
         for tr_name, tr in d_triangles_self.items():
             distances[tr_name] = tr.get_angle_distance(d_triangles_t.get(tr_name,
-                                                                         Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)))
+                                                                         Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)),
+                                                       ord=ord)
         for tr_name, tr in d_triangles_t.items():
             if tr_name not in distances:
                 distances[tr_name] = tr.get_angle_distance(d_triangles_self.get(tr_name,
-                                                                                Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)))
+                                                                                Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)),
+                                                           ord=ord)
+        if len(distances) == 0:
+            return (-1, -1)
         res = reduce(lambda a, b: a+b, distances.values())
         return res, res / len(distances)
 

@@ -359,12 +359,13 @@ class SemGraph():
                ((index_1 in self.graph and index_2 in self.graph[index_1]) or
                 (index_2 in self.graph and index_1 in self.graph[index_2]))
 
-def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[int, Text]=None) -> Tuple[float, float]:
+def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[int, Text]=None, rad: bool= False)\
+        -> Tuple[float, float]:
     """
     Calculate the angle distance between two SemGraphs.
     :param g1:
     :param g2:
-        :param ord {non-zero int, inf, -inf, 'fro', 'nuc'}, optional
+    :param ord {non-zero int, inf, -inf, 'fro', 'nuc'}, optional
         Order of the norm (see table under ``Notes``). inf means numpy's
         `inf` object. The default is None.
 
@@ -399,6 +400,7 @@ def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[
             ----------
             .. [1] G. H. Golub and C. F. Van Loan, *Matrix Computations*,
                    Baltimore, MD, Johns Hopkins University Press, 1985, pg. 15
+    :param rad: If True return the angles in radians. Else, return the cosine of the angles.
 
     :return: (<no_normalized_distance>, <mormalized_distance>)
     """
@@ -409,4 +411,4 @@ def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[
     # 2. Compare triangulations
     t1 = g1_e.get_triangulation()
     t2 = g2_e.get_triangulation()
-    return t1.get_angle_distance(t2, ord=ord)
+    return t1.get_angle_distance(t2, ord=ord, rad=rad)

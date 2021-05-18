@@ -48,6 +48,18 @@ class Triangle(object):
     def sorted_vnames(self) -> List[str]:
         return self._sorted_vnames
 
+    @property
+    def alpha(self) -> float:
+        return np.arccos(self.cos_a)
+
+    @property
+    def beta(self) -> float:
+        return np.arccos(self.cos_b)
+
+    @property
+    def gamma(self) -> float:
+        return np.arccos(self.cos_c)
+
     def __normalize_sides(self, ab: float, bc: float, ac: float):
         self.ab = min(ab, bc + ac)
         self.bc = min(bc, ab + ac)
@@ -57,10 +69,17 @@ class Triangle(object):
         assert NAME_SEPARATOR.join(sorted([v1, v2])) in self.d_distances
         return self.d_distances[NAME_SEPARATOR.join(sorted([v1, v2]))]
 
-    def _get_angle_vector(self) -> np.ndarray:
-        return np.array([self.cos_a, self.cos_b, self.cos_c])
+    def _get_angle_vector(self, rad: bool= False) -> np.ndarray:
+        """
+        :param rad: If True return the angles in radians. Else, return the cosine of the angles.
+        :return:
+        """
+        if rad:
+            return np.array([self.alpha, self.beta, self.gamma])
+        else:
+            return np.array([self.cos_a, self.cos_b, self.cos_c])
 
-    def get_angle_distance(self, t: "Triangle", ord: Union[int, Text]=None) -> float:
+    def get_angle_distance(self, t: "Triangle", ord: Union[int, Text]=None, rad: bool= False) -> float:
         """
         Get the angle distance with another triangle, as the norm of the difference of the cosines of their angles.
         :param t: The triangle to compare with.
@@ -99,10 +118,11 @@ class Triangle(object):
             ----------
             .. [1] G. H. Golub and C. F. Van Loan, *Matrix Computations*,
                    Baltimore, MD, Johns Hopkins University Press, 1985, pg. 15
+        :param rad: If use the angles in radians. Else, use the cosine of the angles.
 
         :return:
         """
-        return np.linalg.norm(self._get_angle_vector() - t._get_angle_vector(), ord=ord)
+        return np.linalg.norm(self._get_angle_vector(rad=rad) - t._get_angle_vector(rad=rad), ord=ord)
 
     def __str__(self):
         return f"Triangle[name: {self.name}, {self.a_name}-{self.b_name}: {self.ab}, " \
@@ -121,7 +141,7 @@ class Triangulation(object):
         """
         self.triangles: List[Triangle] = list(triangles)
 
-    def get_angle_distance(self, t: "Triangulation", ord: Union[int, Text]=None) -> Tuple[float, float]:
+    def get_angle_distance(self, t: "Triangulation", ord: Union[int, Text]=None, rad: bool= False) -> Tuple[float, float]:
         """
 
         :param t:
@@ -160,6 +180,7 @@ class Triangulation(object):
             ----------
             .. [1] G. H. Golub and C. F. Van Loan, *Matrix Computations*,
                    Baltimore, MD, Johns Hopkins University Press, 1985, pg. 15
+        :param rad: If True return the angles in radians. Else, return the cosine of the angles.
 
         :return: (<no_normalized_distance>, <normalized_distance>)
         """
@@ -169,12 +190,14 @@ class Triangulation(object):
         for tr_name, tr in d_triangles_self.items():
             distances[tr_name] = tr.get_angle_distance(d_triangles_t.get(tr_name,
                                                                          Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)),
-                                                       ord=ord)
+                                                       ord=ord,
+                                                       rad=rad)
         for tr_name, tr in d_triangles_t.items():
             if tr_name not in distances:
                 distances[tr_name] = tr.get_angle_distance(d_triangles_self.get(tr_name,
                                                                                 Triangle(1, 1, 1, tr.a_name, tr.b_name, tr.c_name)),
-                                                           ord=ord)
+                                                           ord=ord,
+                                                           rad=rad)
         if len(distances) == 0:
             return (-1, -1)
         res = reduce(lambda a, b: a+b, distances.values())

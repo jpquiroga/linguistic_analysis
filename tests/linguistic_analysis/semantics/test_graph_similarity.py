@@ -25,11 +25,17 @@ def triangle_3():
 
 def test_triangle_angles(triangle_iso: Triangle, triangle_sq: Triangle):
     assert round(triangle_iso.cos_a, 5) == round(math.cos(math.pi/3), 5)
+    assert round(triangle_iso.alpha, 5) == round(math.pi / 3, 5)
     assert round(triangle_iso.cos_b, 5) == round(math.cos(math.pi/3), 5)
+    assert round(triangle_iso.beta, 5) == round(math.pi/3, 5)
     assert round(triangle_iso.cos_c, 5) == round(math.cos(math.pi/3), 5)
+    assert round(triangle_iso.gamma, 5) == round(math.pi/3, 5)
     assert round(triangle_sq.cos_a, 5) == round(math.cos(math.pi/4), 5)
+    assert round(triangle_sq.alpha, 5) == round(math.pi/4, 5)
     assert round(triangle_sq.cos_b, 5) == round(math.cos(math.pi/2), 5)
+    assert round(triangle_sq.beta, 5) == round(math.pi/2, 5)
     assert round(triangle_sq.cos_c, 5) == round(math.cos(math.pi/4), 5)
+    assert round(triangle_sq.gamma, 5) == round(math.pi/4, 5)
 
 def test_triangle_name(triangle_iso: Triangle, triangle_sq: Triangle):
     assert triangle_iso.name == "a_b_c"
@@ -50,9 +56,14 @@ def test_get_vertex_distance(triangle_iso: Triangle, triangle_sq: Triangle):
 def test_get_angle_distance(triangle_iso: Triangle, triangle_sq: Triangle):
     assert round(triangle_iso.get_angle_distance(triangle_sq), 5) == \
            round(triangle_sq.get_angle_distance(triangle_iso), 5)
+    assert round(triangle_iso.get_angle_distance(triangle_sq, rad=True), 5) == \
+           round(triangle_sq.get_angle_distance(triangle_iso, rad=True), 5)
     assert round(triangle_iso.get_angle_distance(triangle_sq), 5) == \
            round(np.linalg.norm(np.array([math.cos(math.pi/3), math.cos(math.pi/3), math.cos(math.pi/3)]) -
                           np.array([math.cos(math.pi/4), math.cos(math.pi/2), math.cos(math.pi/4)])), 5)
+    assert round(triangle_iso.get_angle_distance(triangle_sq, rad=True), 5) == \
+           round(np.linalg.norm(np.array([math.pi/3, math.pi/3, math.pi/3]) -
+                          np.array([math.pi/4, math.pi/2, math.pi/4])), 5)
 
 def test_triangle_3(triangle_3):
     print("*********** " + str(triangle_3))

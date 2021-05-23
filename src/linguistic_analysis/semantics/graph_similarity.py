@@ -1,3 +1,4 @@
+from enum import Enum
 from functools import reduce
 import numpy as np
 from typing import Dict, List, Iterable, Text, Tuple, Union
@@ -5,12 +6,33 @@ from typing import Dict, List, Iterable, Text, Tuple, Union
 from linguistic_analysis.semantics.constants import NAME_SEPARATOR
 
 
+class NormalizationType(Enum):
+    """
+    Types of triangle normalization.
+
+    - NORM_DISTANCE: The maximum length of sides is 1. This means that the distance (disimilarity) is the maximum
+        possible. Normalization in this case is done according to the following principles:
+
+        - If AB == 1 and BC == 1 and AC == 1, then none of the vertexes, the triangle does not really exist. Then, angles
+          as a convention, are set to 0 (rads).
+        - If AB == 1 and BC == 1 and AC < 1, then the side AC really exists, but sides AB and BC do not. The vertex B
+          is maximaly different from A and C and it is considered to be at infinite distance from A and C. Therefore,
+          the angles alpha and gamma are set to pi/2 and beta is set to 0.
+        - If AB == 1 and BC < 1 and AC < 1, then the distance between A and B is the maximum possible, it is set to
+          BC + AC. The  angle gamma is set to pi and alpha and beta are set to 0.
+
+    - NORM_SIMILARITY: TODO
+    """
+    NORM_DISTANCE = 1
+    NORM_SIMILARITY = 2
+
 class Triangle(object):
     """
     Triangle.
     """
 
-    def __init__(self, ab: float, bc: float, ac: float, a_name: Text, b_name: Text, c_name: Text):
+    def __init__(self, ab: float, bc: float, ac: float, a_name: Text, b_name: Text, c_name: Text,
+                 normalization: NormalizationType= None):
         """
         Create a triangle from the length of its edges.
 
@@ -20,19 +42,56 @@ class Triangle(object):
         :param a_name: The name of the vertex A.
         :param b_name: The name of the vertex B.
         :param c_name: The name of the vertex C.
+        :param normalization: The type of the normalization to be made on the triangle. If None, no normalization is
+            done except ensure that the lengths of the sides are compatible.
         """
         assert ab > 0 and bc > 0 and ac > 0
+        assert ab <= 1 and bc <= 1 and ac <= 1
         self.a_name = a_name
         self.b_name = b_name
         self.c_name = c_name
         self.__normalize_sides(ab, bc, ac)
-#        self.ab = ab
-#        self.bc = bc
-#        self.ac = ac
+
         # Calculate angles
-        self.cos_a = (self.ac ** 2 + self.ab ** 2 - self.bc ** 2) / (2 * self.ac * self.ab)
-        self.cos_b = (self.bc ** 2 + self.ab ** 2 - self.ac ** 2) / (2 * self.ab * self.bc)
-        self.cos_c = (self.bc ** 2 + self.ac ** 2 - self.ab ** 2) / (2 * self.ac * self.bc)
+        if normalization == NormalizationType.NORM_DISTANCE:
+            # Special cases
+            if ab == 1 and bc == 1 and ac == 1:
+                self.cos_a = 1
+                self.cos_b = 1
+                self.cos_c = 1
+            elif ab == 1 and bc == 1:
+                self.cos_a = 0
+                self.cos_b = 1
+                self.cos_c = 0
+            elif ab == 1 and ac == 1:
+                self.cos_a = 1
+                self.cos_b = 0
+                self.cos_c = 0
+            elif bc == 1 and ac == 1:
+                self.cos_a = 0
+                self.cos_b = 0
+                self.cos_c = 1
+            elif ab == 1:
+                self.cos_a = 1
+                self.cos_b = 1
+                self.cos_c = -1
+            elif ac == 1:
+                self.cos_a = 1
+                self.cos_b = -1
+                self.cos_c = 1
+            elif bc == 1:
+                self.cos_a = -1
+                self.cos_b = 1
+                self.cos_c = 1
+            else:
+                self.cos_a = (self.ac ** 2 + self.ab ** 2 - self.bc ** 2) / (2 * self.ac * self.ab)
+                self.cos_b = (self.bc ** 2 + self.ab ** 2 - self.ac ** 2) / (2 * self.ab * self.bc)
+                self.cos_c = (self.bc ** 2 + self.ac ** 2 - self.ab ** 2) / (2 * self.ac * self.bc)
+        else:
+            self.cos_a = (self.ac ** 2 + self.ab ** 2 - self.bc ** 2) / (2 * self.ac * self.ab)
+            self.cos_b = (self.bc ** 2 + self.ab ** 2 - self.ac ** 2) / (2 * self.ab * self.bc)
+            self.cos_c = (self.bc ** 2 + self.ac ** 2 - self.ab ** 2) / (2 * self.ac * self.bc)
+
         self._sorted_vnames = sorted([self.a_name, self.b_name, self.c_name])
         self._triangle_name = NAME_SEPARATOR.join(self._sorted_vnames)
         # Dictionary of values

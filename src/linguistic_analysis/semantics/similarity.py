@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 from typing import Callable, Iterable, List, Text, Tuple, Union
 
-from linguistic_analysis.semantics.graph_similarity import Triangle, Triangulation
+from linguistic_analysis.semantics.graph_similarity import Triangle, Triangulation, NormalizationType
 from linguistic_analysis.semantics.constants import NAME_SEPARATOR
 
 
@@ -309,11 +309,13 @@ class SemGraph():
             for l in tqdm(labels):
                 f.write(l + "\n")
 
-    def get_triangulation(self) -> Triangulation:
+    def get_triangulation(self, normalization: NormalizationType= None) -> Triangulation:
         """
         Get a triangulation from the current semgraph.
         The triangles follow a lexicographic order, where the name of each triangle is the lexicographically ordered
         triplet of its vertex names. Example: ABC, ACD, BCD, BDE
+
+        :param normalization: The type of normalization to be applied to the triangles of the triangulation.
 
         :return: The generated triangulation.
         """
@@ -321,17 +323,17 @@ class SemGraph():
         # Only include valid triplets.
         vertex_triplets = self.__get_all_valid_vertex_triplets()
         # 2. Create triangles.
-        triangles = [self.__build_triangle(triplet) for triplet in vertex_triplets]
+        triangles = [self.__build_triangle(triplet, normalization=normalization) for triplet in vertex_triplets]
         # 3. Lexicographically order triangles by name.
         ordered_triangles = sorted(triangles, key=lambda t: t.name)
         return Triangulation(ordered_triangles)
 
-    def __build_triangle(self, triplet: Iterable[Text]) -> Triangle:
+    def __build_triangle(self, triplet: Iterable[Text], normalization: NormalizationType= None) -> Triangle:
         a_name, b_name, c_name = triplet
         ab = self.get_edge_distance(a_name, b_name)
         bc = self.get_edge_distance(b_name, c_name)
         ac = self.get_edge_distance(a_name, c_name)
-        res = Triangle(ab, bc, ac, a_name, b_name, c_name)
+        res = Triangle(ab, bc, ac, a_name, b_name, c_name, normalization=normalization)
         return res
 
     def __get_all_valid_vertex_triplets(self) -> Iterable[Tuple[Text, Text, Text]]:
@@ -359,8 +361,8 @@ class SemGraph():
                ((index_1 in self.graph and index_2 in self.graph[index_1]) or
                 (index_2 in self.graph and index_1 in self.graph[index_2]))
 
-def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[int, Text]=None, rad: bool= False)\
-        -> Tuple[float, float]:
+def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[int, Text]=None, rad: bool= False,
+                                     trinagle_normalization: NormalizationType= None) -> Tuple[float, float]:
     """
     Calculate the angle distance between two SemGraphs.
     :param g1:
@@ -401,6 +403,8 @@ def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[
             .. [1] G. H. Golub and C. F. Van Loan, *Matrix Computations*,
                    Baltimore, MD, Johns Hopkins University Press, 1985, pg. 15
     :param rad: If True return the angles in radians. Else, return the cosine of the angles.
+    :param trinagle_normalization: The type of normalization to be applied to the triangles of the triangulations of the
+        semgraphs.
 
     :return: (<no_normalized_distance>, <mormalized_distance>)
     """
@@ -409,6 +413,6 @@ def get_triangulation_angle_distance(g1: "Semgraph", g2: "Semgraph", ord: Union[
     g2_e = g2.get_augmented_graph(g1.names)
 
     # 2. Compare triangulations
-    t1 = g1_e.get_triangulation()
-    t2 = g2_e.get_triangulation()
+    t1 = g1_e.get_triangulation(normalization=trinagle_normalization)
+    t2 = g2_e.get_triangulation(normalization=trinagle_normalization)
     return t1.get_angle_distance(t2, ord=ord, rad=rad)
